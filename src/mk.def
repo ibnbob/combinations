@@ -1,0 +1,6 @@
+CCSRCS 	= 
+EXPORT	= Combinations.h
+ESRC 	= Main.cc
+EXE	= test
+LIB	= 
+CFLAGSL = -Wall -Werror -Wextra

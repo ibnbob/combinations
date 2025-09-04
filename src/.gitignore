@@ -1,0 +1,5 @@
+test*
+.d/
+.obj/
+makefile
+*~
