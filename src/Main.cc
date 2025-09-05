@@ -15,10 +15,12 @@
 //      Struct   : CombinationsArgs
 //      Abstract :
 struct CombinationsArgs : public argparse::Args {
-  int &n = kwarg("n,n_size",
+  size_t &n = kwarg("n,n_size",
                  "size of set.").set_default(16);
-  int &m = kwarg("m,m_size",
+  size_t &m = kwarg("m,m_size",
                  "size of subsets.").set_default(4);
+  size_t &limit = kwarg("l,limit", "subset limit.").
+    set_default(1<<24);
   bool &iterative = flag("i,iterative", "use iterative generator.");
   bool &printp = flag("p,print", "print the combinations.");
 
@@ -35,25 +37,37 @@ main(int argc, char *argv[])
 {
   auto args = argparse::parse<CombinationsArgs>(argc, argv);
   // args.print();
+  size_t m = args.m;
+  size_t n = args.n;
 
-  std::vector<int> set;
-  set.resize(args.n, 0);
-  std::iota(set.begin(), set.end(), 0);
+  try {
+    size_t cnt(combinations::Counter().count(n, m));
+    std::cout << "Count: " << cnt << std::endl;
+    if (cnt <= args.limit) {
+      std::vector<int> set;
+      set.resize(n, 0);
+      std::iota(set.begin(), set.end(), 0);
+      combinations::Generator<int> generator(set);
+      if (args.iterative) {
+        generator.generateIter(m);
+      } else {
+        generator.generate(m);
+      } // if
 
-  combinations::Generator cgen(set);
-  cgen.enumerate(args.m);
-  std::cout << "Number of cominations: "
-            << cgen.size()
-            << std::endl;
-
-  if (args.printp) {
-    for (auto comb : cgen) {
-      for (auto elem : comb) {
-        std::cout << elem << " ";
-      } // for
-      std::cout << std::endl;
-    } // for
-  } // if
+      if (args.printp) {
+        for (auto comb : generator) {
+          for (auto elem : comb) {
+            std::cout << elem << " ";
+          } // for each element
+          std::cout << std::endl;
+        } // for each combination
+      } // if print
+    } else {
+      std::cout << "Number of subsets exceeds limit." << std::endl;
+    } // if
+  } catch(std::overflow_error &err) {
+    std::cout << err.what() << std::endl;
+  } // try/catch
 
   return 0;
 } // main

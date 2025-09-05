@@ -1,6 +1,6 @@
 //
 //      File     : Combinations.h
-//      Abstract : Classes for enumerating or counting all m-element
+//      Abstract : Classes for generating or counting all m-element
 //      subsets of an n-element set.
 //
 
@@ -43,7 +43,7 @@ private:
 
 
 //      Class    : Generator
-//      Abstract : Class for enumerating all m-element subsets of an
+//      Abstract : Class for generating all m-element subsets of an
 //      n-element set. The original set is specified as a standard
 //      vector of type T. The result is a vector of vectors of type
 //      T. Type T must be copyable.
@@ -56,14 +56,13 @@ public:
     _set(set) {}; // CTOR
   ~Generator() = default; // DTOR
 
-  void reserve(size_t sz) { _enumeration.reserve(sz); };
-  void enumerate(size_t m);
-  void enumerateIter(size_t m);
+  void generate(size_t m);
+  void generateIter(size_t m);
 
-  std::vector<Set> &getEnumeration() { return _enumeration; };
-  auto size() { return _enumeration.size(); };
-  auto begin() { return _enumeration.begin(); };
-  auto end() { return _enumeration.end(); };
+  std::vector<Set> &getCombinations() { return _combinations; };
+  auto size() { return _combinations.size(); };
+  auto begin() { return _combinations.begin(); };
+  auto end() { return _combinations.end(); };
 
   Generator(const Generator &) =
     delete; // Copy CTOR
@@ -75,10 +74,10 @@ public:
     delete; // Move assignment
 
  private:
-  void enumerateRec(size_t curIdx, Set &curset);
+  void generateRec(size_t curIdx, Set &curset);
 
   Set &_set;
-  std::vector<Set> _enumeration;
+  std::vector<Set> _combinations;
   size_t _m;
 }; // Generator
 
@@ -127,48 +126,48 @@ Counter::countRec(const size_t n, size_t m)
 } // Counter::countRec
 
 
-//      Function : Generator<T>::enumerate
-//      Abstract : Enumerate all m-element subsets of the set.
+//      Function : Generator<T>::generate
+//      Abstract : Generate all m-element subsets of the set.
 template <class T>
 void
-Generator<T>::enumerate(size_t m)
+Generator<T>::generate(size_t m)
 {
-  _enumeration.clear();
-  _enumeration.reserve(Counter().count(_set.size(), m));
+  _combinations.clear();
+  _combinations.reserve(Counter().count(_set.size(), m));
   _m = m;
   Set curSet;
   curSet.reserve(m);
-  enumerateRec(0, curSet);
-} // Generator<T>::enumerate
+  generateRec(0, curSet);
+} // Generator<T>::generate
 
 
-//      Function : Generator<T>::enumerateRec
+//      Function : Generator<T>::generateRec
 //      Abstract : Recursive enumeration.
 template <class T>
 void
-Generator<T>::enumerateRec(size_t curIdx, Set &curSet)
+Generator<T>::generateRec(size_t curIdx, Set &curSet)
 {
   if (curSet.size() < _m) {
     curSet.push_back(_set[curIdx]);
-    enumerateRec(curIdx+1, curSet);
+    generateRec(curIdx+1, curSet);
     curSet.pop_back();
     if (curIdx + (_m-curSet.size()) < _set.size()) {
-      enumerateRec(curIdx+1, curSet);
+      generateRec(curIdx+1, curSet);
     } // if
   } else {
     assert(curSet.size() == _m);
-    _enumeration.push_back(curSet);
+    _combinations.push_back(curSet);
   } // if
-} // Generator<T>::enumerateRec
+} // Generator<T>::generateRec
 
 
-//      Function : Generator<T>::enumerateIter
+//      Function : Generator<T>::generateIter
 //      Abstract : Iterative enumerator.
 template <class T>
 void
-Generator<T>::enumerateIter(size_t m)
+Generator<T>::generateIter(size_t m)
 {
-  _enumeration.clear();
+  _combinations.clear();
   Set curSet;
   std::vector<size_t> idxStack;
   idxStack.push_back(0);
@@ -185,7 +184,7 @@ Generator<T>::enumerateIter(size_t m)
         stateStack[curIdx] = 1;
       } else {
         assert(state == 0);
-        _enumeration.push_back(curSet);
+        _combinations.push_back(curSet);
         idxStack.pop_back();
       } // if
     } else if (state == 1) {
@@ -203,7 +202,7 @@ Generator<T>::enumerateIter(size_t m)
       stateStack[curIdx] = 0;
     } // if
   } // while
-} // Generator<T>::enumerateIter
+} // Generator<T>::generateIter
 
 
 } // namespace combinations
