@@ -14,6 +14,34 @@
 
 namespace combinations {
 
+
+// Storing and hashing an (n,m) pair.
+using CombPair = std::pair<size_t, size_t>;
+auto CombPairHash = [](const CombPair &pair) {
+  return pair.first ^ (pair.second<<1); };
+
+
+//      Class    : Counter
+//      Abstract : Class for counting all m-element sets of
+class Counter {
+public:
+  Counter() :
+    _counts(16, CombPairHash) {}; // CTOR
+  ~Counter() = default; // DTOR
+
+  size_t count(size_t n, size_t m);
+
+  Counter(const Counter &) = delete; // Copy CTOR
+  Counter &operator=(const Counter &) = delete; // Copy assignment
+  Counter(Counter &&) = delete; // Move CTOR
+  Counter &operator=(Counter &&) = delete; // Move assignment
+private:
+  size_t countRec(size_t n, size_t m);
+
+  std::unordered_map<CombPair, size_t, decltype(CombPairHash)> _counts;
+}; // Counter
+
+
 //      Class    : Generator
 //      Abstract : Class for enumerating all m-element subsets of an
 //      n-element set. The original set is specified as a standard
@@ -55,31 +83,48 @@ public:
 }; // Generator
 
 
-// Storing and hashing an (n,m) pair.
-using CombPair = std::pair<size_t, size_t>;
-auto CombPairHash = [](const CombPair &pair) {
-  return pair.first ^ (pair.second<<1); };
+//      Function : Counter::count
+//      Abstract : Return the number of combinations of m elements
+//      from an n-element set. Throws an overflow error if an overflow
+//      is detected.
+inline size_t
+Counter::count(const size_t n, size_t m)
+{
+  return countRec(n, m);
+} // Counter::count
 
 
-//      Class    : Counter
-//      Abstract : Class for counting all m-element sets of
-class Counter {
-public:
-  Counter() :
-    _counts(16, CombPairHash) {}; // CTOR
-  ~Counter() = default; // DTOR
-
-  size_t count(size_t n, size_t m);
-
-  Counter(const Counter &) = delete; // Copy CTOR
-  Counter &operator=(const Counter &) = delete; // Copy assignment
-  Counter(Counter &&) = delete; // Move CTOR
-  Counter &operator=(Counter &&) = delete; // Move assignment
-private:
-  size_t countRec(size_t n, size_t m);
-
-  std::unordered_map<CombPair, size_t, decltype(CombPairHash)> _counts;
-}; // Counter
+//      Function : Counter::countRec
+//      Abstract : Return the number of combinations of m elements
+//      from an n-element set. Computation is done using the recursive
+//      formula C(n,m) = C(n-1,m) + C(n-1,m-1) so no factorials are
+//      directly computed. Throws an overflow error if an overflow
+//      is detected.
+inline size_t
+Counter::countRec(const size_t n, size_t m)
+{
+  m = std::min(m, n-m);
+  if (m == 0) {
+    return 1;
+  } else if (m == 1) {
+    return n;
+  } else {
+    CombPair pair(n,m);
+    if (auto result = _counts.find(pair);
+        result != _counts.end()) {
+      return result->second;
+    } else {
+      size_t cnt0 = countRec(n-1, m);
+      size_t cnt1 = countRec(n-1, m-1);
+      size_t cnt = cnt0 + cnt1;
+      if (cnt < (cnt0 | cnt1)) {
+        throw std::overflow_error("Combination size overflowed.");
+      } // if
+      _counts[pair] = cnt;
+      return cnt;
+    } // if
+  } // if
+} // Counter::countRec
 
 
 //      Function : Generator<T>::enumerate
@@ -159,50 +204,6 @@ Generator<T>::enumerateIter(size_t m)
     } // if
   } // while
 } // Generator<T>::enumerateIter
-
-
-//      Function : Counter::count
-//      Abstract : Return the number of combinations of m elements
-//      from an n-element set. Throws an overflow error if an overflow
-//      is detected.
-inline size_t
-Counter::count(const size_t n, size_t m)
-{
-  return countRec(n, m);
-} // Counter::count
-
-
-//      Function : Counter::countRec
-//      Abstract : Return the number of combinations of m elements
-//      from an n-element set. Computation is done using the recursive
-//      formula C(n,m) = C(n-1,m) + C(n-1,m-1) so no factorials are
-//      directly computed. Throws an overflow error if an overflow
-//      is detected.
-inline size_t
-Counter::countRec(const size_t n, size_t m)
-{
-  m = std::min(m, n-m);
-  if (m == 0) {
-    return 1;
-  } else if (m == 1) {
-    return n;
-  } else {
-    CombPair pair(n,m);
-    if (auto result = _counts.find(pair);
-        result != _counts.end()) {
-      return result->second;
-    } else {
-      size_t cnt0 = countRec(n-1, m);
-      size_t cnt1 = countRec(n-1, m-1);
-      size_t cnt = cnt0 + cnt1;
-      if (cnt < (cnt0 | cnt1)) {
-        throw std::overflow_error("Combination size overflowed.");
-      } // if
-      _counts[pair] = cnt;
-      return cnt;
-    } // if
-  } // if
-} // Counter::countRec
 
 
 } // namespace combinations

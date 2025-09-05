@@ -3,4 +3,4 @@
 
 [Combinations.h](src/Cominations.h) is a header-only implementation 
 of classes for counting or generating all _m_-element subsets of an
-_n_-elemeent set. 
+_n_-element set. 

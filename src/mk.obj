@@ -6,7 +6,7 @@ DEPDIR := ../.d
 $(shell mkdir -p $(DEPDIR) >/dev/null)
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 
-CXX = /usr/bin/g++ -std=c++20 ${CFLAGS}
+CXX = /usr/bin/g++ ${CFLAGS}
 CCOMPILE = $(CXX) -I.. $(DEPFLAGS) -c
 
 POSTCOMPILE = @if ! diff $(DEPDIR)/$*.Td $(DEPDIR)/$*.d; then mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@; else rm -f $(DEPDIR)/$*.Td; fi
