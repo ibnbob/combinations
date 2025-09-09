@@ -52,7 +52,7 @@ class Generator {
 public:
   using Set = std::vector<T>;
 
-  Generator(Set &set) :
+  Generator(const Set &set) :
     _set(set) {}; // CTOR
   ~Generator() = default; // DTOR
 
@@ -76,7 +76,7 @@ public:
  private:
   void generateRec(size_t curIdx, Set &curset);
 
-  Set &_set;
+  const Set &_set;
   std::vector<Set> _combinations;
   size_t _m;
 }; // Generator
