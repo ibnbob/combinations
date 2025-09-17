@@ -60,5 +60,4 @@ returns the next combination in lexicographical order. It returns an empty
 vector when the end of the enumeration is reached.
 
 ## Usage
-See [Main.cc](src/Main.cc) for an example of the usage of both `Counter` 
-and `Generator`.
+See [Main.cc](src/Main.cc) for an example of the usage of all classes.
