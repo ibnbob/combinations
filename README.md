@@ -2,10 +2,10 @@
 # Combinations.h
 
 [Combinations.h](src/Combinations.h) is a header-only implementation 
-of classes for counting or generating all _m_-element subsets of an
-_n_-element set. It provides two classes, `Counter` and `Generator`, 
-for counting and generating combinations. Both classes exist within 
-the `combinations` namespace.
+of classes for counting, generating or enumerating all _m_-element
+subsets of an _n_-element set. It provides three classes, `Counter`,
+`Generator` and `Enumerator` for counting, generating and enumerating
+combinations. All classes exist within the `combinations` namespace.
 
 ## `Counter` Class
 The `Counter` class has a member function 
@@ -43,12 +43,22 @@ template <class T = int> class Generator;
 It generates all _m_-element subsets of an _n_-element set. The original set is
 specified as `std::vector<T>`. The result is  
 `std::vector< std::vector<T> >`.
-Type `T` must be copyable.
+Type `T` must be copyable. Since all combinations are present at the same time,
+this can be a memory-intensive class. This class should only be used for small
+sets or applications where random access of the combinations is required.
+
+## `Enumerator` Class
+The `Enumerator` class is a template class:
+```
+template <class T = int> class Enumerator;
+```
+Like `Generator`, this class operates on a set specified as 
+`std::vector< std::vector<T> >`.
+The method `start(size_t m)` starts the enumeration and returns the
+lexicographically first combination  of size `m`. The method `next()`
+returns the next combination in lexicographical order. It returns an empty
+vector when the end of the enumeration is reached.
 
 ## Usage
-See [Main.cc](src/Main.cc) for an example of the useage of both `Counter` 
+See [Main.cc](src/Main.cc) for an example of the usage of both `Counter` 
 and `Generator`.
-
-
-
-

@@ -1,7 +1,7 @@
 //
 //      File     : Combinations.h
-//      Abstract : Classes for generating or counting all m-element
-//      subsets of an n-element set.
+//      Abstract : Classes for counting, generating or enumerating all
+//      m-element subsets of an n-element set.
 //
 
 #ifndef COMBINATIONS_H
@@ -43,10 +43,11 @@ private:
 
 
 //      Class    : Generator
-//      Abstract : Class for generating all m-element subsets of an
-//      n-element set. The original set is specified as a standard
-//      vector of type T. The result is a vector of vectors of type
-//      T. Type T must be copyable.
+//      Abstract : Template class for generating all m-element subsets
+//      of an n-element set. The original set is specified as a
+//      standard vector of type T. The result is a vector of vectors
+//      of type T. This is memory intensive, but allows random access
+//      to the combinations if needed. Type T must be copyable.
 template <class T = int>
 class Generator {
 public:
@@ -57,7 +58,6 @@ public:
   ~Generator() = default; // DTOR
 
   void generate(size_t m);
-  void generateIter(size_t m);
 
   std::vector<Set> &getCombinations() { return _combinations; };
   auto size() { return _combinations.size(); };
@@ -80,6 +80,42 @@ public:
   std::vector<Set> _combinations;
   size_t _m;
 }; // Generator
+
+
+//      Class    : Enumerator
+//      Abstract : Template class for enumerating m-element subsets
+//      of an n-element set one at a time. This would normally be used
+//      in a loop when random access to all of the combinations is
+//      unnecessary. The original set is specified as a standard
+//      vector of type T. Type T must be copyable.
+template <class T = int>
+class Enumerator {
+public:
+  using Set = std::vector<T>;
+
+  Enumerator(const Set &set) :
+    _set(set), _m(0) {}; // CTOR
+  ~Enumerator() = default; // DTOR
+
+  Set first(size_t m);
+  Set next();
+
+  Enumerator(const Enumerator &) =
+    delete; // Copy CTOR
+  Enumerator &operator=(const Enumerator &) =
+    delete; // Copy assignment
+  Enumerator(Enumerator &&) =
+    delete; // Move CTOR
+  Enumerator &operator=(Enumerator &&) =
+    delete; // Move assignment
+
+ private:
+  const Set &_set;
+  size_t _m;
+  Set _curSet;
+  std::vector<size_t> _idxStack;
+  std::vector<int> _stateStack;
+}; // Enumerator
 
 
 //      Function : Counter::count
@@ -161,48 +197,65 @@ Generator<T>::generateRec(size_t curIdx, Set &curSet)
 } // Generator<T>::generateRec
 
 
-//      Function : Generator<T>::generateIter
-//      Abstract : Iterative enumerator.
+//      Function : Enumerator<T>::first
+//      Abstract : Starts the enumerator and returns the first
+//      combination. If m is zero, the null set is returned.
 template <class T>
-void
-Generator<T>::generateIter(size_t m)
+auto Enumerator<T>::first(size_t m) -> Set
 {
-  _combinations.clear();
-  Set curSet;
-  std::vector<size_t> idxStack;
-  idxStack.push_back(0);
-  std::vector<int> stateStack;
-  stateStack.resize(_set.size(), 0);
+  _m = m;
+  _curSet.clear();
+  _idxStack.clear();
+  _idxStack.push_back(0);
+  _stateStack.clear();
+  _stateStack.resize(_set.size()+1, 0);
 
-  while (idxStack.size()) {
-    size_t curIdx = idxStack.back();
-    int state = stateStack[curIdx];
+  if (_m) {
+    return next();
+  } else {
+    return _curSet;
+  } // if
+} // Enumerator<T>::first
+
+
+//      Function : Enumerator<T>::next
+//      Abstract : Returns the next combination. If there are no more
+//      combinations, the null set is returned.
+template <class T>
+auto Enumerator<T>::next() -> Set
+{
+  while (_idxStack.size()) {
+    size_t curIdx = _idxStack.back();
+    int state = _stateStack[curIdx];
     if (state == 0) {
-      if (curSet.size() < m) {
-        curSet.push_back(_set[curIdx]);
-        idxStack.push_back(curIdx+1);
-        stateStack[curIdx] = 1;
+      if (_curSet.size() < _m) {
+        _curSet.push_back(_set[curIdx]);
+        _idxStack.push_back(curIdx+1);
+        _stateStack[curIdx] = 1;
       } else {
         assert(state == 0);
-        _combinations.push_back(curSet);
-        idxStack.pop_back();
+        _idxStack.pop_back();
+        return _curSet;
       } // if
     } else if (state == 1) {
-      curSet.pop_back();
-      if (curIdx + (m-curSet.size()) < _set.size()) {
-        idxStack.push_back(curIdx+1);
-        stateStack[curIdx] = 2;
+      _curSet.pop_back();
+      if (curIdx + (_m-_curSet.size()) < _set.size()) {
+        _idxStack.push_back(curIdx+1);
+        _stateStack[curIdx] = 2;
       } else {
-        idxStack.pop_back();
-        stateStack[curIdx] = 0;
+        _idxStack.pop_back();
+        _stateStack[curIdx] = 0;
       } // if
     } else {
       assert(state == 2);
-      idxStack.pop_back();
-      stateStack[curIdx] = 0;
+      _idxStack.pop_back();
+      _stateStack[curIdx] = 0;
     } // if
   } // while
-} // Generator<T>::generateIter
+
+  assert(_curSet.size() == 0);
+  return _curSet;
+} // Enumerator<T>::next
 
 
 } // namespace combinations

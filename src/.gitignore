@@ -1,5 +1,5 @@
 test*
 .d/
-.obj/
+.obj*/
 makefile
 *~
