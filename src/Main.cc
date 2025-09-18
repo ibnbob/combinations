@@ -97,12 +97,12 @@ main(int argc, char *argv[])
     if (cnt <= args.limit) {
       if (args.enumerate) {
         size_t cnt2 = testEnumerate(n, m, args.printp);
-        if (cnt == cnt2) {
+        if (cnt != cnt2) {
           std::cout << "Enumerator count is incorrect!" << std::endl;
         } // if
       } else {
         size_t cnt2 = testGenerate(n, m, args.printp);
-        if (cnt == cnt2) {
+        if (cnt != cnt2) {
           std::cout << "Generator count is incorrect!" << std::endl;
         } // if
       } // if
