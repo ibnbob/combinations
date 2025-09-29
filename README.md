@@ -32,7 +32,7 @@ The class memoizes intermediate results so that the running time of `count`
 is $O(n \cdot m)$. This is worse than the straightforward computation using 
 factorials but has the advantage of not overflowing during the computation 
 if the result can be represent by `size_t`. Also, subsequent calls can reuse 
-the results of previous calls. The functiont throws `std::overflow_error` if
+the results of previous calls. The function throws `std::overflow_error` if
 an overflow is detected.
 
 ## `Generator` Class
