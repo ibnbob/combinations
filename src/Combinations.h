@@ -14,19 +14,12 @@
 
 namespace combinations {
 
-
-// Storing and hashing an (n,m) pair.
-using CombPair = std::pair<size_t, size_t>;
-auto CombPairHash = [](const CombPair &pair) {
-  return pair.first ^ (pair.second<<1); };
-
-
 //      Class    : Counter
 //      Abstract : Class for counting all m-element sets of
 class Counter {
 public:
   Counter() :
-    _counts(16, CombPairHash) {}; // CTOR
+    _counts(16) {}; // CTOR
   ~Counter() = default; // DTOR
 
   size_t count(size_t n, size_t m);
@@ -36,9 +29,16 @@ public:
   Counter(Counter &&) = delete; // Move CTOR
   Counter &operator=(Counter &&) = delete; // Move assignment
 private:
+  // Storing and hashing an (n,m) pair.
+  using CombPair = std::pair<size_t, size_t>;
+  struct CombPairHash {
+    size_t operator()(const CombPair &pair) const {
+      return pair.first ^ (pair.second<<1); };
+  }; // CombPairHash
+
   size_t countRec(size_t n, size_t m);
 
-  std::unordered_map<CombPair, size_t, decltype(CombPairHash)> _counts;
+  std::unordered_map<CombPair, size_t, CombPairHash> _counts;
 }; // Counter
 
 
