@@ -1,6 +1,6 @@
 //
 //      File     : Main.cc
-//      Abstract : Driver
+//      Abstract : Test bench.
 //
 
 #include "Args.h"
@@ -11,6 +11,10 @@
 #include <numeric>
 #include <string>
 
+#define VALIDATE(expr) std::cout << (expr ? "PASSED" : "FAILED") \
+  << " @ " << __LINE__ \
+  << ": " << #expr \
+  << std::endl;
 
 //      Struct   : CombinationsArgs
 //      Abstract :
@@ -25,7 +29,7 @@ struct CombinationsArgs : public argparse::Args {
   bool &printp = flag("p,print", "print the combinations.");
 
   void prolog() override {
-    std::cout << "Combination generator." << std::endl;
+    std::cout << "Test combination classes." << std::endl;
   } // prolog
 }; // CombinationsArgs
 
@@ -40,9 +44,19 @@ testEnumerate(size_t n, size_t m, bool printp)
   std::iota(set.begin(), set.end(), 0);
   combinations::Enumerator<int> enumerator(set);
   size_t cnt2 = 0;
+
+  combinations::Lexor<int> lexi(n, m);
   for (auto comb = enumerator.first(m);
        comb.size();
        comb = enumerator.next()) {
+    auto comb2 = lexi.get(cnt2);
+    if (comb != comb2) {
+      std::cout << "Combination "
+                << cnt2
+                << " doesn't match."
+                << std::endl;
+      break;
+    } // if
     if (printp) {
       for (auto elem : comb) {
         std::cout << elem << " ";
@@ -95,17 +109,8 @@ main(int argc, char *argv[])
     size_t cnt(combinations::Counter().count(n, m));
     std::cout << "Count: " << cnt << std::endl;
     if (cnt <= args.limit) {
-      if (args.enumerate) {
-        size_t cnt2 = testEnumerate(n, m, args.printp);
-        if (cnt != cnt2) {
-          std::cout << "Enumerator count is incorrect!" << std::endl;
-        } // if
-      } else {
-        size_t cnt2 = testGenerate(n, m, args.printp);
-        if (cnt != cnt2) {
-          std::cout << "Generator count is incorrect!" << std::endl;
-        } // if
-      } // if
+      VALIDATE(cnt == testEnumerate(n, m, args.printp));
+      VALIDATE(cnt == testGenerate(n, m, args.printp));
     } else {
       std::cout << "Number of subsets exceeds limit." << std::endl;
     } // if

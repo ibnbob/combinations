@@ -8,6 +8,7 @@
 #define COMBINATIONS_H
 
 #include <cassert>
+#include <concepts>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -42,14 +43,92 @@ private:
 }; // Counter
 
 
+//      Class    : Enumerator
+//      Abstract : Template class for enumerating m-element subsets
+//      of an n-element set one at a time. This would normally be used
+//      in a loop when random access to all of the combinations is
+//      unnecessary. The original set is specified as a standard
+//      vector of type T. Type T must be copy-constructible.
+template <class T = int>
+class Enumerator {
+#if __cplusplus >= 202002L
+  static_assert(std::copy_constructible<T>);
+#endif
+public:
+  using Set = std::vector<T>;
+
+  Enumerator(const Set &set) :
+    _set(set), _m(0) {}; // CTOR
+  ~Enumerator() = default; // DTOR
+
+  Set first(size_t m);
+  Set next();
+
+  Enumerator(const Enumerator &) =
+    delete; // Copy CTOR
+  Enumerator &operator=(const Enumerator &) =
+    delete; // Copy assignment
+  Enumerator(Enumerator &&) =
+    delete; // Move CTOR
+  Enumerator &operator=(Enumerator &&) =
+    delete; // Move assignment
+
+ private:
+  const Set &_set;
+  size_t _m;
+  Set _curSet;
+  std::vector<size_t> _idxStack;
+  std::vector<int> _stateStack;
+}; // Enumerator
+
+
+//      Class    : Lexor
+//      Abstract : Template class for providing random access to
+//      m-element subsets of n-element sets. The n-element set is
+//      assumed to be the set of natural numbers {0, 1, ...,
+//      n-1}. Random access is by the ith m-element subset based on
+//      lexicographical ordering. The first subset is {0, 1, ...,
+//      m-1}. The last subset is {n-m, n-m+1, ..., n-1}.
+template <class T = int>
+class Lexor {
+#if __cplusplus >= 202002L
+  static_assert(std::integral<T>);
+#endif
+public:
+  Lexor(size_t n, size_t m) :
+    _n(n), _m(m) {}; // CTOR
+  ~Lexor() = default; // DTOR
+
+  std::vector<T> get(size_t i);
+
+  Lexor(const Lexor &) = delete; // Copy CTOR
+  Lexor &operator=(const Lexor &) = delete; // Copy assignment
+  Lexor(Lexor &&) = delete; // Move CTOR
+  Lexor &operator=(Lexor &&) = delete; // Move assignment
+private:
+  void get(size_t n,
+           size_t m,
+           size_t i,
+           T nel,
+           std::vector<T> &r);
+
+  size_t _n;
+  size_t _m;
+  Counter _counter;
+}; // Lexor
+
+
 //      Class    : Generator
 //      Abstract : Template class for generating all m-element subsets
 //      of an n-element set. The original set is specified as a
 //      standard vector of type T. The result is a vector of vectors
 //      of type T. This is memory intensive, but allows random access
-//      to the combinations if needed. Type T must be copyable.
+//      to the combinations if needed. Type T must be copy-constructible.
 template <class T = int>
 class Generator {
+#if __cplusplus >= 202002L
+  static_assert(std::copy_constructible<T>);
+#endif
 public:
   using Set = std::vector<T>;
 
@@ -82,40 +161,7 @@ public:
 }; // Generator
 
 
-//      Class    : Enumerator
-//      Abstract : Template class for enumerating m-element subsets
-//      of an n-element set one at a time. This would normally be used
-//      in a loop when random access to all of the combinations is
-//      unnecessary. The original set is specified as a standard
-//      vector of type T. Type T must be copyable.
-template <class T = int>
-class Enumerator {
-public:
-  using Set = std::vector<T>;
-
-  Enumerator(const Set &set) :
-    _set(set), _m(0) {}; // CTOR
-  ~Enumerator() = default; // DTOR
-
-  Set first(size_t m);
-  Set next();
-
-  Enumerator(const Enumerator &) =
-    delete; // Copy CTOR
-  Enumerator &operator=(const Enumerator &) =
-    delete; // Copy assignment
-  Enumerator(Enumerator &&) =
-    delete; // Move CTOR
-  Enumerator &operator=(Enumerator &&) =
-    delete; // Move assignment
-
- private:
-  const Set &_set;
-  size_t _m;
-  Set _curSet;
-  std::vector<size_t> _idxStack;
-  std::vector<int> _stateStack;
-}; // Enumerator
+// Function definitions.
 
 
 //      Function : Counter::count
@@ -160,41 +206,6 @@ Counter::countRec(const size_t n, size_t m)
     } // if
   } // if
 } // Counter::countRec
-
-
-//      Function : Generator<T>::generate
-//      Abstract : Generate all m-element subsets of the set.
-template <class T>
-void
-Generator<T>::generate(size_t m)
-{
-  _combinations.clear();
-  _combinations.reserve(Counter().count(_set.size(), m));
-  _m = m;
-  Set curSet;
-  curSet.reserve(m);
-  generateRec(0, curSet);
-} // Generator<T>::generate
-
-
-//      Function : Generator<T>::generateRec
-//      Abstract : Recursive enumeration.
-template <class T>
-void
-Generator<T>::generateRec(size_t curIdx, Set &curSet)
-{
-  if (curSet.size() < _m) {
-    curSet.push_back(_set[curIdx]);
-    generateRec(curIdx+1, curSet);
-    curSet.pop_back();
-    if (curIdx + (_m-curSet.size()) < _set.size()) {
-      generateRec(curIdx+1, curSet);
-    } // if
-  } else {
-    assert(curSet.size() == _m);
-    _combinations.push_back(curSet);
-  } // if
-} // Generator<T>::generateRec
 
 
 //      Function : Enumerator<T>::first
@@ -256,6 +267,86 @@ auto Enumerator<T>::next() -> Set
   assert(_curSet.size() == 0);
   return _curSet;
 } // Enumerator<T>::next
+
+
+//      Function : Lexor::get
+//      Abstract : Get the i-th m-element subset of the n-element set
+//      {0,...,n-1}. The first subset in the order is indexed by 0;
+//      the last is C(n, m)-1. If i is out of range, then we return an
+//      empty vector.
+template <class T>
+std::vector<T>
+Lexor<T>::get(size_t i)
+{
+  std::vector<T> result;
+  if (i < _counter.count(_n, _m)) {
+    get(_n, _m, i, 0, result);
+  } // if
+  return result;
+} // Lexor::get
+
+
+//      Function : Lexor::get
+//      Abstract : Get the i-th m-element subset of the n-element set
+//      {0,...,n-1}. Parameter i is then next element we are
+//      considering adding to the returned subset. Parameter r is the
+//      returned subset.
+template <class T>
+void
+Lexor<T>::get(size_t n,
+              size_t m,
+              size_t i,
+              T nel,
+              std::vector<T> &r)
+{
+  if (m > 0) {
+    assert(nel >= 0);
+    assert(static_cast<size_t>(nel) < _n);
+    assert(i < _counter.count(n, m));
+    auto elCnt = _counter.count(n-1, m-1);
+    if (i < elCnt) {
+      r.push_back(nel);
+      get(n-1, m-1, i, nel+1, r);
+    } else {
+      get(n-1, m, i-elCnt, nel+1, r);
+    } // if
+  } // if
+} // Lexor::get
+
+
+//      Function : Generator<T>::generate
+//      Abstract : Generate all m-element subsets of the set.
+template <class T>
+void
+Generator<T>::generate(size_t m)
+{
+  _combinations.clear();
+  _combinations.reserve(Counter().count(_set.size(), m));
+  _m = m;
+  Set curSet;
+  curSet.reserve(m);
+  generateRec(0, curSet);
+} // Generator<T>::generate
+
+
+//      Function : Generator<T>::generateRec
+//      Abstract : Recursive enumeration.
+template <class T>
+void
+Generator<T>::generateRec(size_t curIdx, Set &curSet)
+{
+  if (curSet.size() < _m) {
+    curSet.push_back(_set[curIdx]);
+    generateRec(curIdx+1, curSet);
+    curSet.pop_back();
+    if (curIdx + (_m-curSet.size()) < _set.size()) {
+      generateRec(curIdx+1, curSet);
+    } // if
+  } else {
+    assert(curSet.size() == _m);
+    _combinations.push_back(curSet);
+  } // if
+} // Generator<T>::generateRec
 
 
 } // namespace combinations
