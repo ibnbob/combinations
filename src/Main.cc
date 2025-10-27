@@ -45,7 +45,7 @@ testEnumerate(size_t n, size_t m, bool printp)
   combinations::Enumerator<int> enumerator(set);
   size_t cnt2 = 0;
 
-  combinations::Lexor<int> lexi(n, m);
+  combinations::Lexor<int> lexi(set, m);
   for (auto comb = enumerator.first(m);
        comb.size();
        comb = enumerator.next()) {

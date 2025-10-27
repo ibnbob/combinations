@@ -53,12 +53,11 @@ The `Lexor` class is a template class
 template <class T = int> class Lexor;
 ```
 It provides random access to _m_-element subsets of _n_-element sets based
-on lexicographical order using the method `Lexor::get(size_t )`. We assume
-the n-element set to be the set of natural numbers ${0, 1, ...,  n-1}$.
-Random access is by the _ith_ _m_-element subset based on lexicographical
-ordering. The first subset, with index 0, is ${0, 1, ..., m-1}$. The last
-subset is ${n-m, n-m+1, ..., n-1}$. The result is returned as
-`std::vector<T>`.
+on lexicographical order using the method `Lexor::get(size_t )`. One specifies
+original set as `std::vector<T>`. Type `T` must be copyable. Random access is
+by the _ith_ _m_-element subset based on lexicographical ordering. The first
+subset, with index 0, is ${0, 1, ..., m-1}$. The last subset is
+${n-m, n-m+1, ..., n-1}$. The result is returned as `std::vector<T>`.
 
 If one intends to process all subsets in order, then the `Enumerator` class
 (_v.s._) is slightly more efficient.

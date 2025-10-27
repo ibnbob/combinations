@@ -84,21 +84,25 @@ public:
 
 //      Class    : Lexor
 //      Abstract : Template class for providing random access to
-//      m-element subsets of n-element sets. The n-element set is
-//      assumed to be the set of natural numbers {0, 1, ...,
-//      n-1}. Random access is by the ith m-element subset based on
-//      lexicographical ordering. The first subset is {0, 1, ...,
-//      m-1}. The last subset is {n-m, n-m+1, ..., n-1}.
+//      m-element subsets of n-element sets. The original set is
+//      specified as a standard vector of type T. Type T must be
+//      copy-constructible. Random access is by the ith m-element
+//      subset based on lexicographical ordering. The first subset is
+//      {0, 1, ..., m-1}. The last subset is {n-m, n-m+1, ..., n-1}.
 template <class T = int>
 class Lexor {
 #if __cplusplus >= 202002L
-  static_assert(std::integral<T>);
+  static_assert(std::copy_constructible<T>);
 #endif
 public:
-  Lexor(size_t n, size_t m) :
-    _n(n), _m(m) {}; // CTOR
+  using Set = std::vector<T>;
+
+  Lexor(const Set &set, const size_t m) :
+    _set(set), _n(set.size()), _m(m) {}; // CTOR
   ~Lexor() = default; // DTOR
 
+  void setM(size_t m);
+  std::vector<T> get(size_t i, size_t m); // Sets m as side effect.
   std::vector<T> get(size_t i);
 
   Lexor(const Lexor &) = delete; // Copy CTOR
@@ -109,9 +113,10 @@ private:
   void get(size_t n,
            size_t m,
            size_t i,
-           T nel,
+           size_t nel,
            std::vector<T> &r);
 
+  const Set &_set;
   size_t _n;
   size_t _m;
   Counter _counter;
@@ -169,7 +174,7 @@ public:
 //      from an n-element set. Throws an overflow error if an overflow
 //      is detected.
 inline size_t
-Counter::count(const size_t n, size_t m)
+Counter::count(const size_t n, const size_t m)
 {
   return countRec(n, m);
 } // Counter::count
@@ -212,7 +217,7 @@ Counter::countRec(const size_t n, size_t m)
 //      Abstract : Starts the enumerator and returns the first
 //      combination. If m is zero, the null set is returned.
 template <class T>
-auto Enumerator<T>::first(size_t m) -> Set
+auto Enumerator<T>::first(const size_t m) -> Set
 {
   _m = m;
   _curSet.clear();
@@ -269,6 +274,30 @@ auto Enumerator<T>::next() -> Set
 } // Enumerator<T>::next
 
 
+//      Function : Lexor::setM
+//      Abstract : Sets the size of the subset for subsequent get() calls.
+template <class T>
+void
+Lexor<T>::setM(const size_t m)
+{
+  _m = m;
+} // Lexor::setM
+
+
+//      Function : Lexor::get
+//      Abstract : Get the i-th m-element subset of the n-element set
+//      {0,...,n-1}. The first subset in the order is indexed by 0;
+//      the last is C(n, m)-1. If i is out of range, then we return an
+//      empty vector. This sets m for subsequent calls as a side effect.
+template <class T>
+std::vector<T>
+Lexor<T>::get(const size_t i, const size_t m)
+{
+  _m = m;
+  return get(i);
+} // Lexor::get
+
+
 //      Function : Lexor::get
 //      Abstract : Get the i-th m-element subset of the n-element set
 //      {0,...,n-1}. The first subset in the order is indexed by 0;
@@ -276,7 +305,7 @@ auto Enumerator<T>::next() -> Set
 //      empty vector.
 template <class T>
 std::vector<T>
-Lexor<T>::get(size_t i)
+Lexor<T>::get(const size_t i)
 {
   std::vector<T> result;
   if (i < _counter.count(_n, _m)) {
@@ -293,19 +322,18 @@ Lexor<T>::get(size_t i)
 //      returned subset.
 template <class T>
 void
-Lexor<T>::get(size_t n,
-              size_t m,
-              size_t i,
-              T nel,
+Lexor<T>::get(const size_t n,
+              const size_t m,
+              const size_t i,
+              const size_t nel,
               std::vector<T> &r)
 {
   if (m > 0) {
-    assert(nel >= 0);
-    assert(static_cast<size_t>(nel) < _n);
+    assert(nel < _n);
     assert(i < _counter.count(n, m));
     auto elCnt = _counter.count(n-1, m-1);
     if (i < elCnt) {
-      r.push_back(nel);
+      r.push_back(_set[nel]);
       get(n-1, m-1, i, nel+1, r);
     } else {
       get(n-1, m, i-elCnt, nel+1, r);
@@ -318,7 +346,7 @@ Lexor<T>::get(size_t n,
 //      Abstract : Generate all m-element subsets of the set.
 template <class T>
 void
-Generator<T>::generate(size_t m)
+Generator<T>::generate(const size_t m)
 {
   _combinations.clear();
   _combinations.reserve(Counter().count(_set.size(), m));
@@ -333,7 +361,7 @@ Generator<T>::generate(size_t m)
 //      Abstract : Recursive enumeration.
 template <class T>
 void
-Generator<T>::generateRec(size_t curIdx, Set &curSet)
+Generator<T>::generateRec(const size_t curIdx, Set &curSet)
 {
   if (curSet.size() < _m) {
     curSet.push_back(_set[curIdx]);
